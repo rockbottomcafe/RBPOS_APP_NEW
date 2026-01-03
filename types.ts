@@ -17,8 +17,10 @@ export interface Table {
   id: string;
   name: string;
   status: TableStatus;
+  section: string;
   currentOrderId?: string;
   orderValue?: number;
+  sessionStartTime?: number;
 }
 
 export interface OrderItem {
@@ -40,6 +42,8 @@ export interface Order {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   createdAt: number;
+  cashAmount?: number;
+  upiAmount?: number;
 }
 
 export interface BusinessProfile {
@@ -52,7 +56,10 @@ export interface BusinessProfile {
 export interface AppSettings {
   theme: ThemeType;
   logoUrl?: string;
-  invoiceLogoPlacement: 'Left' | 'Center' | 'Right';
+  showLogoOnBill: boolean;
+  showAddressOnBill: boolean;
   invoiceHeader: string;
   invoiceFooter: string;
+  gstEnabled: boolean;
+  gstPercentage: number;
 }

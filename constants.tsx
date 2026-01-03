@@ -30,28 +30,31 @@ export const INITIAL_MENU: MenuItem[] = [
 ];
 
 export const INITIAL_TABLES: Table[] = [
-  { id: 't1', name: 'T1', status: 'vacant' },
-  { id: 't2', name: 'T2', status: 'vacant' },
-  { id: 't3', name: 'T3', status: 'vacant' },
-  { id: 't4', name: 'T4', status: 'vacant' },
-  { id: 't5', name: 'T5', status: 'vacant' },
-  { id: 't6', name: 'T6', status: 'vacant' },
-  { id: 't7', name: 'T7', status: 'vacant' },
-  { id: 't8', name: 'T8', status: 'vacant' },
-  { id: 'c1', name: 'C1', status: 'vacant' },
-  { id: 'c2', name: 'C2', status: 'vacant' },
+  { id: 't1', name: 'T1', status: 'vacant', section: 'Main Floor' },
+  { id: 't2', name: 'T2', status: 'vacant', section: 'Main Floor' },
+  { id: 't3', name: 'T3', status: 'vacant', section: 'Main Floor' },
+  { id: 't4', name: 'T4', status: 'vacant', section: 'Main Floor' },
+  { id: 't5', name: 'T5', status: 'vacant', section: 'Terrace' },
+  { id: 't6', name: 'T6', status: 'vacant', section: 'Terrace' },
+  { id: 't7', name: 'T7', status: 'vacant', section: 'Terrace' },
+  { id: 't8', name: 'T8', status: 'vacant', section: 'Terrace' },
+  { id: 'c1', name: 'C1', status: 'vacant', section: 'Lounge' },
+  { id: 'c2', name: 'C2', status: 'vacant', section: 'Lounge' },
 ];
 
 export const INITIAL_PROFILE: BusinessProfile = {
-  ownerName: 'Mr. John Doe',
+  ownerName: 'Cafe Rock Bottom',
   ownerNumber: '+91 98765 43210',
   fssai: '12345678901234',
-  address: '123 Cafe Street, Coffee Town, Nagpur, Maharashtra - 440001'
+  address: '41, Mangalmurti Sq, Jaitala Road, Nagpur-440022'
 };
 
 export const INITIAL_SETTINGS: AppSettings = {
   theme: 'Rock Bottom',
-  invoiceLogoPlacement: 'Left',
-  invoiceHeader: 'Bold and True... only for You...!',
-  invoiceFooter: '41, Mangalmurti Sq, Jaitala Road, Nagpur-440022'
+  showLogoOnBill: true,
+  showAddressOnBill: true,
+  invoiceHeader: 'Cafe Rock Bottom',
+  invoiceFooter: 'Visit Again! Follow us @caferockbottom',
+  gstEnabled: false,
+  gstPercentage: 5
 };
