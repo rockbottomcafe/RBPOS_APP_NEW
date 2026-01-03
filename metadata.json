@@ -1,0 +1,5 @@
+{
+  "name": "Rock Bottom POS Reborn",
+  "description": "A high-performance, serverless POS system for Rock Bottom Cafe, featuring table management, order history, dashboard analytics, and menu management.",
+  "requestFramePermissions": []
+}
