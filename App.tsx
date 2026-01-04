@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import Dashboard from './components/Dashboard.tsx';
@@ -12,7 +11,7 @@ import Reports from './components/Reports.tsx';
 import { db } from './services/db.ts';
 import { MenuItem, Table, Order, BusinessProfile, AppSettings } from './types.ts';
 import { INITIAL_SETTINGS } from './constants.tsx';
-import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon } from 'lucide-react';
+import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -26,20 +25,45 @@ const App: React.FC = () => {
   const [dbStatus, setDbStatus] = useState<'testing' | 'connected' | 'error'>('testing');
 
   useEffect(() => {
-    db.testConnection().then(success => {
-      setDbStatus(success ? 'connected' : 'error');
-    });
+    // Safety net: Force hide loading screen after 5 seconds
+    const safetyTimer = setTimeout(() => {
+      if (loading) {
+        console.warn("Establishing connection taking longer than expected. Proceeding...");
+        setLoading(false);
+      }
+    }, 5000);
+
+    const initApp = async () => {
+      try {
+        const isConnected = await db.testConnection();
+        setDbStatus(isConnected ? 'connected' : 'error');
+        
+        // If we can't connect, don't wait for subscriptions to finish loading
+        if (!isConnected) {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Initialization error:", err);
+        setDbStatus('error');
+        setLoading(false);
+      }
+    };
+
+    initApp();
 
     const unsubTables = db.subscribeToTables((data) => {
       setTables(data);
-      setLoading(false);
+      setLoading(false); // Resolve loading when first data chunk arrives
+      setDbStatus('connected');
     });
     
     const unsubMenu = db.subscribeToMenu((data) => setMenu(data));
     const unsubOrders = db.subscribeToOrders((data) => setOrders(data));
     const unsubSettings = db.subscribeToSettings((data) => setSettings(data));
 
-    db.getProfile().then(setProfile);
+    db.getProfile().then(p => {
+      if (p) setProfile(p);
+    });
 
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
 
@@ -49,6 +73,7 @@ const App: React.FC = () => {
       unsubOrders();
       unsubSettings();
       clearInterval(timer);
+      clearTimeout(safetyTimer);
     };
   }, []);
 
@@ -113,8 +138,20 @@ const App: React.FC = () => {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-500 font-bold animate-pulse">Connecting to Rock Bottom Cloud...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-blue-100 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+          </div>
+          <div className="mt-8 text-center">
+            <h2 className="text-xl font-black text-gray-800 tracking-tighter uppercase">Rock Bottom POS</h2>
+            <p className="text-sm text-gray-400 font-bold animate-pulse mt-1">Establishing Secure Cloud Link...</p>
+          </div>
+          <div className="mt-12 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center space-x-3 max-w-xs">
+            <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-tight">
+              Synchronizing floor plans and menu inventory...
+            </p>
+          </div>
         </div>
       </div>
     );
