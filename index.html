@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        // Shim process.env for the browser environment to support Gemini API requirements
+        // Shim process.env for the browser environment
         window.process = window.process || { env: {} };
     </script>
     <style>
@@ -32,6 +31,7 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div id="root"></div>
+    <!-- Crucial entry point script -->
     <script type="module" src="index.tsx"></script>
 </body>
 </html>
