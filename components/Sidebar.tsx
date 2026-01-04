@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle } from 'lucide-react';
-import { AppSettings } from '../types';
+import { AppSettings } from '../types.ts';
 
 interface SidebarProps {
   activeTab: string;

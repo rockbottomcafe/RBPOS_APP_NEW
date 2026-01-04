@@ -1,17 +1,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import DineIn from './components/DineIn';
-import MenuMgmt from './components/MenuMgmt';
-import Profile from './components/Profile';
-import TableSetup from './components/TableSetup';
-import Settings from './components/Settings';
-import OrderHistory from './components/OrderHistory';
-import Reports from './components/Reports';
-import { db } from './services/db';
-import { MenuItem, Table, Order, BusinessProfile, AppSettings } from './types';
-import { INITIAL_SETTINGS } from './constants';
+import Sidebar from './components/Sidebar.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import DineIn from './components/DineIn.tsx';
+import MenuMgmt from './components/MenuMgmt.tsx';
+import Profile from './components/Profile.tsx';
+import TableSetup from './components/TableSetup.tsx';
+import Settings from './components/Settings.tsx';
+import OrderHistory from './components/OrderHistory.tsx';
+import Reports from './components/Reports.tsx';
+import { db } from './services/db.ts';
+import { MenuItem, Table, Order, BusinessProfile, AppSettings } from './types.ts';
+import { INITIAL_SETTINGS } from './constants.tsx';
 import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon } from 'lucide-react';
 
 const App: React.FC = () => {

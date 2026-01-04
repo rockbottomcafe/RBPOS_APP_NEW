@@ -1,8 +1,7 @@
 
-/* FIX: Added Gemini AI Business Insights to provide automated sales analysis. */
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
-import { Order } from '../types';
+import { Order } from '../types.ts';
 import { Sparkles } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Table, TableStatus } from '../types';
+import { Table, TableStatus } from '../types.ts';
 import { Plus, Trash2, Edit2, Layout, Save, X, Layers } from 'lucide-react';
 
 interface TableSetupProps {
@@ -12,7 +12,8 @@ const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
 
-  const sections = Array.from(new Set(tables.map(t => t.section)));
+  // FIX: Casting sections to string[] to ensure s is string and resolve "Type 'unknown' is not assignable to type 'string'" on line 152
+  const sections = Array.from(new Set(tables.map(t => t.section))) as string[];
 
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -145,15 +146,15 @@ const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate }) => {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {sections.map(s => (
                     <button 
-                      key={s} 
+                      key={s as string} 
                       type="button"
                       onClick={(e) => {
                         const input = (e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement);
-                        input.value = s;
+                        if (input) input.value = s as string;
                       }}
                       className="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded"
                     >
-                      {s}
+                      {s as string}
                     </button>
                   ))}
                 </div>

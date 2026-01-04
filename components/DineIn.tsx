@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Table, MenuItem, Order, OrderItem, PaymentMethod, BusinessProfile, AppSettings } from '../types';
+import { Table, MenuItem, Order, OrderItem, PaymentMethod, BusinessProfile, AppSettings } from '../types.ts';
 import { Plus, Minus, X, Check, ArrowLeft, Trash2, Search, Layers, CreditCard, Banknote, Landmark, Smartphone, Tag, ReceiptText, Calculator, Printer, Clock, Maximize2, Minimize2 } from 'lucide-react';
 
 interface DineInProps {
@@ -585,7 +585,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
         {/* Modal: Exit Guard (Confirm Punch) */}
         {isExitGuardOpen && (
           <div className="fixed inset-0 bg-black/60 z-[610] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-10 animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-3xl w-full max-sm overflow-hidden shadow-2xl p-10 animate-in fade-in zoom-in duration-200">
               <div className="text-center">
                 <div className="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center mb-6 mx-auto">
                   <ReceiptText className="w-8 h-8" />
@@ -636,7 +636,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
         {/* Modal: Clear Confirmation */}
         {isClearModalOpen && (
           <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-10">
+            <div className="bg-white rounded-3xl w-full max-sm overflow-hidden shadow-2xl p-10">
               <div className="text-center">
                 <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto">
                   <Trash2 className="w-8 h-8" />
@@ -710,7 +710,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
-              {sectionTables.map(table => {
+              {(sectionTables as Table[]).map(table => {
                 const duration = calculateDurationMins(table.sessionStartTime);
                 const hasSession = table.status !== 'vacant' && table.sessionStartTime;
 

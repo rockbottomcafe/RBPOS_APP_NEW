@@ -1,6 +1,6 @@
 
-import { MenuItem, Table, Order, BusinessProfile, AppSettings } from '../types';
-import { INITIAL_MENU, INITIAL_TABLES, INITIAL_PROFILE, INITIAL_SETTINGS } from '../constants';
+import { MenuItem, Table, Order, BusinessProfile, AppSettings } from '../types.ts';
+import { INITIAL_MENU, INITIAL_TABLES, INITIAL_PROFILE, INITIAL_SETTINGS } from '../constants.tsx';
 
 class SimplifiedFirestore {
   private listeners: { [key: string]: Array<(data: any) => void> } = {

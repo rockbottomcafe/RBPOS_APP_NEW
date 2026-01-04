@@ -1,5 +1,5 @@
 
-import { MenuItem, Table, BusinessProfile, AppSettings } from './types';
+import { MenuItem, Table, BusinessProfile, AppSettings } from './types.ts';
 
 export const INITIAL_MENU: MenuItem[] = [
   { id: '1', name: 'Veggie Wrap', category: 'San', price: 149, foodType: 'veg' },

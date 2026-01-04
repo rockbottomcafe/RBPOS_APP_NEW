@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BusinessProfile } from '../types';
+import { BusinessProfile } from '../types.ts';
 import { User, Phone, FileText, MapPin } from 'lucide-react';
 
 interface ProfileProps {

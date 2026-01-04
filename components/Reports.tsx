@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Order, AppSettings, BusinessProfile } from '../types';
+import { Order, AppSettings, BusinessProfile } from '../types.ts';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   LineChart, Line, PieChart as RePieChart, Pie, Cell 

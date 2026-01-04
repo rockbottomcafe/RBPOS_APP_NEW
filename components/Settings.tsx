@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { AppSettings, BusinessProfile, ThemeType } from '../types';
+import { AppSettings, BusinessProfile, ThemeType } from '../types.ts';
 import { Settings as SettingsIcon, Image as ImageIcon, FileText, Printer, CheckCircle, Store, MapPin, Tag, X, Palette, Moon, Sun, Leaf, Monitor } from 'lucide-react';
 
 interface SettingsProps {

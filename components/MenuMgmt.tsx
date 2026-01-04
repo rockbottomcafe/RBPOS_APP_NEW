@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useMemo } from 'react';
-import { MenuItem, FoodType } from '../types';
+import { MenuItem, FoodType } from '../types.ts';
 import { 
   Edit2, 
   Trash2, 
@@ -361,7 +361,7 @@ const MenuMgmt: React.FC<MenuMgmtProps> = ({ menu = [], onUpdate }) => {
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-8 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-sm overflow-hidden shadow-2xl p-8 animate-in fade-in zoom-in duration-200">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4">
                 <AlertCircle className="w-8 h-8" />
