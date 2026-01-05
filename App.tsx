@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import Dashboard from './components/Dashboard.tsx';
@@ -214,9 +215,9 @@ const App: React.FC = () => {
 
           <div className={`flex items-center space-x-6 ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>
             <div className="text-right">
-              <div className="text-xl font-black flex items-center justify-end tracking-tighter">
+              <div className="text-sm font-black flex items-center justify-end tracking-tighter tabular-nums">
                 {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                <Clock className="w-5 h-5 ml-3 text-blue-500 opacity-60" />
+                <Clock className="w-4 h-4 ml-3 text-blue-500 opacity-60" />
               </div>
               <div className={`text-[10px] font-black uppercase tracking-widest flex items-center justify-end ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                 {currentTime.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
