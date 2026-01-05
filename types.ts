@@ -53,6 +53,14 @@ export interface BusinessProfile {
   address: string;
 }
 
+export interface InvoiceLine {
+  id: string;
+  text: string;
+  size: number;
+  bold: boolean;
+  align: 'left' | 'center' | 'right';
+}
+
 export interface AppSettings {
   theme: ThemeType;
   logoUrl?: string;
@@ -60,6 +68,9 @@ export interface AppSettings {
   showAddressOnBill: boolean;
   invoiceHeader: string;
   invoiceFooter: string;
+  headerLines: InvoiceLine[];
+  footerLines: InvoiceLine[];
+  bodyFontSize: number;
   gstEnabled: boolean;
   gstPercentage: number;
 }

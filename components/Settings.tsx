@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { AppSettings, BusinessProfile, ThemeType } from '../types.ts';
-import { Settings as SettingsIcon, Image as ImageIcon, FileText, Printer, CheckCircle, Store, MapPin, Tag, X, Palette, Moon, Sun, Leaf, Monitor } from 'lucide-react';
+import { AppSettings, BusinessProfile, ThemeType, InvoiceLine } from '../types.ts';
+import { Settings as SettingsIcon, Image as ImageIcon, FileText, Printer, CheckCircle, Store, MapPin, Tag, X, Palette, Moon, Sun, Leaf, Monitor, Plus, Trash2, AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react';
 
 interface SettingsProps {
   settings: AppSettings;
@@ -11,7 +11,12 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, onSaveProfile }) => {
-  const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
+  const [localSettings, setLocalSettings] = useState<AppSettings>({
+    ...settings,
+    headerLines: settings.headerLines || [],
+    footerLines: settings.footerLines || [],
+    bodyFontSize: settings.bodyFontSize || 12
+  });
   const [localProfile, setLocalProfile] = useState<BusinessProfile>(profile);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -33,6 +38,43 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
     setTimeout(() => setIsSaved(false), 3000);
   };
 
+  const addLine = (type: 'header' | 'footer') => {
+    const newLine: InvoiceLine = {
+      id: `line_${Date.now()}`,
+      text: 'New Line',
+      size: 12,
+      bold: false,
+      align: 'center'
+    };
+    if (type === 'header') {
+      setLocalSettings(prev => ({ ...prev, headerLines: [...prev.headerLines, newLine] }));
+    } else {
+      setLocalSettings(prev => ({ ...prev, footerLines: [...prev.footerLines, newLine] }));
+    }
+  };
+
+  const removeLine = (type: 'header' | 'footer', id: string) => {
+    if (type === 'header') {
+      setLocalSettings(prev => ({ ...prev, headerLines: prev.headerLines.filter(l => l.id !== id) }));
+    } else {
+      setLocalSettings(prev => ({ ...prev, footerLines: prev.footerLines.filter(l => l.id !== id) }));
+    }
+  };
+
+  const updateLine = (type: 'header' | 'footer', id: string, updates: Partial<InvoiceLine>) => {
+    if (type === 'header') {
+      setLocalSettings(prev => ({
+        ...prev,
+        headerLines: prev.headerLines.map(l => l.id === id ? { ...l, ...updates } : l)
+      }));
+    } else {
+      setLocalSettings(prev => ({
+        ...prev,
+        footerLines: prev.footerLines.map(l => l.id === id ? { ...l, ...updates } : l)
+      }));
+    }
+  };
+
   const themes: { id: ThemeType; label: string; icon: any; color: string }[] = [
     { id: 'Rock Bottom', label: 'Rock Bottom', icon: Sun, color: 'bg-blue-600' },
     { id: 'Midnight', label: 'Midnight', icon: Moon, color: 'bg-slate-900' },
@@ -40,8 +82,50 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
     { id: 'Modern Minimalist', label: 'Modern', icon: Monitor, color: 'bg-gray-400' },
   ];
 
+  // Fix: Explicitly type LineEditor as React.FC to allow standard React props like 'key' in JSX map calls.
+  const LineEditor: React.FC<{ line: InvoiceLine, type: 'header' | 'footer' }> = ({ line, type }) => (
+    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 group">
+      <input 
+        value={line.text}
+        onChange={(e) => updateLine(type, line.id, { text: e.target.value })}
+        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+      />
+      <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 space-x-1">
+        <button onClick={() => updateLine(type, line.id, { size: Math.max(8, line.size - 1) })} className="p-1 hover:bg-gray-100 rounded text-gray-500"><X className="w-3 h-3 rotate-45" /></button>
+        <span className="text-[10px] font-black w-6 text-center">{line.size}</span>
+        <button onClick={() => updateLine(type, line.id, { size: Math.min(24, line.size + 1) })} className="p-1 hover:bg-gray-100 rounded text-gray-500"><Plus className="w-3 h-3" /></button>
+      </div>
+      <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 space-x-1">
+        <button 
+          onClick={() => updateLine(type, line.id, { align: 'left' })}
+          className={`p-1 rounded ${line.align === 'left' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'}`}
+        ><AlignLeft className="w-3.5 h-3.5" /></button>
+        <button 
+          onClick={() => updateLine(type, line.id, { align: 'center' })}
+          className={`p-1 rounded ${line.align === 'center' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'}`}
+        ><AlignCenter className="w-3.5 h-3.5" /></button>
+        <button 
+          onClick={() => updateLine(type, line.id, { align: 'right' })}
+          className={`p-1 rounded ${line.align === 'right' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'}`}
+        ><AlignRight className="w-3.5 h-3.5" /></button>
+      </div>
+      <button 
+        onClick={() => updateLine(type, line.id, { bold: !line.bold })}
+        className={`p-2 rounded-lg border ${line.bold ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-100'}`}
+      >
+        <span className="text-[10px] font-black">B</span>
+      </button>
+      <button 
+        onClick={() => removeLine(type, line.id)}
+        className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -64,151 +148,232 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
         </div>
 
         <div className="p-8 space-y-12">
-          {/* Theme Selection */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-2 text-blue-600">
-              <Palette className="w-4 h-4" />
-              <h3 className="text-sm font-black uppercase tracking-widest">Visual Experience</h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {themes.map((theme) => (
-                <button
-                  key={theme.id}
-                  onClick={() => setLocalSettings(prev => ({ ...prev, theme: theme.id }))}
-                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center space-y-3 ${
-                    localSettings.theme === theme.id 
-                      ? 'bg-blue-50 border-blue-600 shadow-lg' 
-                      : 'bg-white border-gray-100 hover:border-blue-200'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${theme.color}`}>
-                    <theme.icon className="w-5 h-5" />
-                  </div>
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${localSettings.theme === theme.id ? 'text-blue-700' : 'text-gray-400'}`}>
-                    {theme.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
+          {/* Theme & Store Details Simplified for space */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Business Profile */}
             <div className="space-y-6">
               <div className="flex items-center space-x-2 text-blue-600">
                 <Store className="w-4 h-4" />
                 <h3 className="text-sm font-black uppercase tracking-widest">Store Identity</h3>
               </div>
-              
               <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Owner Name</label>
-                  <input 
-                    value={localProfile.ownerName}
-                    onChange={e => setLocalProfile({...localProfile, ownerName: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">FSSAI Number</label>
-                  <input 
-                    value={localProfile.fssai}
-                    onChange={e => setLocalProfile({...localProfile, fssai: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Store Address</label>
-                  <textarea 
-                    rows={3}
-                    value={localProfile.address}
-                    onChange={e => setLocalProfile({...localProfile, address: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-sm resize-none"
-                  />
+                <input 
+                  value={localProfile.ownerName}
+                  onChange={e => setLocalProfile({...localProfile, ownerName: e.target.value})}
+                  placeholder="Owner Name"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-sm"
+                />
+                <textarea 
+                  rows={2}
+                  value={localProfile.address}
+                  onChange={e => setLocalProfile({...localProfile, address: e.target.value})}
+                  placeholder="Store Address"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-sm resize-none"
+                />
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">UI Theme</span>
+                <div className="flex space-x-2">
+                   {themes.map(t => (
+                     <button 
+                       key={t.id}
+                       onClick={() => setLocalSettings(prev => ({ ...prev, theme: t.id }))}
+                       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${localSettings.theme === t.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-400'}`}
+                       title={t.label}
+                     >
+                       <t.icon className="w-4 h-4" />
+                     </button>
+                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Branding & Logo */}
             <div className="space-y-6">
-              <div className="flex items-center space-x-2 text-blue-600">
+               <div className="flex items-center space-x-2 text-blue-600">
                 <ImageIcon className="w-4 h-4" />
-                <h3 className="text-sm font-black uppercase tracking-widest">Logo & Branding</h3>
+                <h3 className="text-sm font-black uppercase tracking-widest">Logo & Bill Branding</h3>
               </div>
-              
-              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
-                {localSettings.logoUrl ? (
-                  <div className="relative group">
-                    <img src={localSettings.logoUrl} alt="Store Logo" className="h-28 w-28 object-contain rounded-xl shadow-md bg-white p-2" />
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <div className="w-16 h-16 bg-white rounded-xl border border-gray-200 overflow-hidden flex items-center justify-center p-2">
+                  {localSettings.logoUrl ? <img src={localSettings.logoUrl} className="max-h-full max-w-full object-contain" /> : <ImageIcon className="w-6 h-6 text-gray-200" />}
+                </div>
+                <div className="flex-1">
+                   <label className="inline-block px-4 py-1.5 bg-white border border-gray-200 text-[9px] font-black uppercase tracking-widest rounded-lg cursor-pointer hover:bg-gray-100 transition-all shadow-sm">
+                    Upload Logo
+                    <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                  </label>
+                  <div className="flex items-center mt-2 space-x-4">
                     <button 
-                      onClick={() => setLocalSettings(prev => ({ ...prev, logoUrl: undefined }))}
-                      className="absolute -top-3 -right-3 bg-red-500 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                      onClick={() => setLocalSettings(s => ({...s, showLogoOnBill: !s.showLogoOnBill}))}
+                      className={`text-[9px] font-black uppercase tracking-tight ${localSettings.showLogoOnBill ? 'text-blue-600' : 'text-gray-400'}`}
                     >
-                      <X className="w-3 h-3" />
+                      {localSettings.showLogoOnBill ? 'Logo Visible' : 'Logo Hidden'}
+                    </button>
+                    <button 
+                      onClick={() => setLocalSettings(s => ({...s, showAddressOnBill: !s.showAddressOnBill}))}
+                      className={`text-[9px] font-black uppercase tracking-tight ${localSettings.showAddressOnBill ? 'text-blue-600' : 'text-gray-400'}`}
+                    >
+                      {localSettings.showAddressOnBill ? 'Addr Visible' : 'Addr Hidden'}
                     </button>
                   </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mx-auto mb-3">
-                      <ImageIcon className="w-8 h-8 text-gray-200" />
-                    </div>
-                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-4">No Logo Selected</p>
-                  </div>
-                )}
-                <label className="mt-4 px-6 py-2 bg-white border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest rounded-xl cursor-pointer hover:bg-gray-50 transition-all shadow-sm">
-                  Choose New File
-                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                </label>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Show Logo on Bill</span>
-                  <button 
-                    onClick={() => setLocalSettings(s => ({...s, showLogoOnBill: !s.showLogoOnBill}))}
-                    className={`w-12 h-6 rounded-full transition-all relative ${localSettings.showLogoOnBill ? 'bg-blue-600' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${localSettings.showLogoOnBill ? 'translate-x-6' : ''}`}></div>
-                  </button>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Show Address on Bill</span>
-                  <button 
-                    onClick={() => setLocalSettings(s => ({...s, showAddressOnBill: !s.showAddressOnBill}))}
-                    className={`w-12 h-6 rounded-full transition-all relative ${localSettings.showAddressOnBill ? 'bg-blue-600' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${localSettings.showAddressOnBill ? 'translate-x-6' : ''}`}></div>
-                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Invoice Template */}
-          <div className="space-y-6 pt-8 border-t border-gray-100">
-            <div className="flex items-center space-x-2 text-blue-600">
-              <Printer className="w-4 h-4" />
-              <h3 className="text-sm font-black uppercase tracking-widest">Invoice Customization (80mm)</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Bill Header Text</label>
-                <input 
-                  value={localSettings.invoiceHeader}
-                  onChange={e => setLocalSettings({...localSettings, invoiceHeader: e.target.value})}
-                  placeholder="e.g., Bold and True... only for You...!"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-sm"
-                />
+          {/* Invoice Template Designer */}
+          <div className="space-y-8 pt-12 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Printer className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Invoice Designer</h2>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">80mm Thermal Printer Template</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Bill Footer Text</label>
-                <input 
-                  value={localSettings.invoiceFooter}
-                  onChange={e => setLocalSettings({...localSettings, invoiceFooter: e.target.value})}
-                  placeholder="e.g., Thank you for visiting!"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-sm"
-                />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              {/* Designer Controls */}
+              <div className="space-y-10">
+                {/* Header Lines */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center">
+                      <FileText className="w-3.5 h-3.5 mr-2" /> Header Sections
+                    </h3>
+                    <button 
+                      onClick={() => addLine('header')}
+                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {localSettings.headerLines.map(line => (
+                      <LineEditor key={line.id} line={line} type="header" />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Body Settings */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center">
+                    <Type className="w-3.5 h-3.5 mr-2" /> Global Typography
+                  </h3>
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Bill Body Font Size</span>
+                    <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1.5 space-x-3">
+                      <button onClick={() => setLocalSettings(s => ({...s, bodyFontSize: Math.max(8, s.bodyFontSize - 1)}))} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><X className="w-4 h-4 rotate-45" /></button>
+                      <span className="text-sm font-black w-8 text-center">{localSettings.bodyFontSize}px</span>
+                      <button onClick={() => setLocalSettings(s => ({...s, bodyFontSize: Math.min(20, s.bodyFontSize + 1)}))} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><Plus className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Lines */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center">
+                      <Tag className="w-3.5 h-3.5 mr-2" /> Footer Sections
+                    </h3>
+                    <button 
+                      onClick={() => addLine('footer')}
+                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {localSettings.footerLines.map(line => (
+                      <LineEditor key={line.id} line={line} type="footer" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Thermal Printer Preview */}
+              <div className="flex flex-col items-center">
+                <div className="sticky top-24">
+                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 text-center">80mm Live Preview</h3>
+                  <div className="w-[300px] bg-white shadow-2xl rounded-sm border-t-8 border-gray-800 p-6 font-mono relative overflow-hidden flex flex-col items-center">
+                    {/* Thermal Paper Texture overlay effect */}
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-gray-50/5 to-transparent opacity-50"></div>
+                    
+                    {localSettings.showLogoOnBill && localSettings.logoUrl && (
+                      <img src={localSettings.logoUrl} className="max-h-16 max-w-full object-contain mb-4 grayscale opacity-80" />
+                    )}
+
+                    {localSettings.headerLines.map(line => (
+                      <div 
+                        key={line.id} 
+                        style={{ 
+                          fontSize: `${line.size}px`, 
+                          fontWeight: line.bold ? 'bold' : 'normal',
+                          textAlign: line.align,
+                          width: '100%'
+                        }}
+                        className="mb-1 leading-tight break-words"
+                      >
+                        {line.text}
+                      </div>
+                    ))}
+
+                    {localSettings.showAddressOnBill && (
+                      <div className="text-[10px] text-center mt-2 border-b border-dashed border-gray-300 pb-2 w-full">
+                        {localProfile.address}
+                      </div>
+                    )}
+
+                    <div className="w-full mt-4 space-y-1.5" style={{ fontSize: `${localSettings.bodyFontSize}px` }}>
+                      <div className="flex justify-between border-b border-dashed border-gray-200 pb-1 font-bold">
+                        <span>Items</span>
+                        <span>Amt</span>
+                      </div>
+                      <div className="flex justify-between opacity-70">
+                        <span>Veggie Wrap x 2</span>
+                        <span>₹298.00</span>
+                      </div>
+                      <div className="flex justify-between opacity-70">
+                        <span>Cheese Corn Maggi x 1</span>
+                        <span>₹119.00</span>
+                      </div>
+                      <div className="border-t border-dashed border-gray-400 mt-2 pt-2 flex justify-between">
+                        <span>Subtotal:</span>
+                        <span>₹417.00</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg border-b-2 border-double border-gray-800 pb-1 mt-1">
+                        <span>TOTAL:</span>
+                        <span>₹417.00</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 w-full space-y-1">
+                      {localSettings.footerLines.map(line => (
+                        <div 
+                          key={line.id} 
+                          style={{ 
+                            fontSize: `${line.size}px`, 
+                            fontWeight: line.bold ? 'bold' : 'normal',
+                            textAlign: line.align,
+                            width: '100%'
+                          }}
+                          className="leading-tight"
+                        >
+                          {line.text}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Receipt Tear Effect */}
+                    <div className="absolute -bottom-1 left-0 right-0 flex justify-between">
+                       {[...Array(15)].map((_, i) => (
+                         <div key={i} className="w-4 h-4 bg-gray-50 rotate-45 transform translate-y-2"></div>
+                       ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

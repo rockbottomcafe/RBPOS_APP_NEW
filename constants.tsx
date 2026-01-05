@@ -55,6 +55,15 @@ export const INITIAL_SETTINGS: AppSettings = {
   showAddressOnBill: true,
   invoiceHeader: 'Cafe Rock Bottom',
   invoiceFooter: 'Visit Again! Follow us @caferockbottom',
+  headerLines: [
+    { id: 'h1', text: 'CAFE ROCK BOTTOM', size: 16, bold: true, align: 'center' },
+    { id: 'h2', text: 'Quality Coffee & Food', size: 12, bold: false, align: 'center' }
+  ],
+  footerLines: [
+    { id: 'f1', text: 'Thank You For Visiting!', size: 12, bold: true, align: 'center' },
+    { id: 'f2', text: 'Follow us @caferockbottom', size: 10, bold: false, align: 'center' }
+  ],
+  bodyFontSize: 12,
   gstEnabled: false,
   gstPercentage: 5
 };
