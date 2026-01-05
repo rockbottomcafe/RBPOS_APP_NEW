@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Table, MenuItem, Order, OrderItem, PaymentMethod, BusinessProfile, AppSettings } from '../types.ts';
 import { Plus, Minus, X, Check, ArrowLeft, Trash2, Search, Layers, CreditCard, Banknote, Landmark, Smartphone, Tag, ReceiptText, Calculator, Printer, Clock, Maximize2, Minimize2 } from 'lucide-react';
@@ -17,7 +16,8 @@ type ButtonFeedback = 'idle' | 'success';
 
 const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings, onOrderComplete, onTableUpdate }) => {
   const [rearrangeMode, setRearrangeMode] = useState(false);
-  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  // Store only the ID to ensure we always use the latest data from props
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [isDirty, setIsDirty] = useState(false);
@@ -41,6 +41,12 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
   const [paymentMode, setPaymentMode] = useState<PaymentMethod>('UPI');
   const [cashSplit, setCashSplit] = useState<number>(0);
   const [upiSplit, setUpiSplit] = useState<number>(0);
+
+  // Derive the active table from the tables prop using the selected ID
+  // This is CRITICAL for reactivity after a Firestore update
+  const selectedTable = useMemo(() => {
+    return tables.find(t => t.id === selectedTableId) || null;
+  }, [tables, selectedTableId]);
 
   const categories = useMemo(() => {
     const items = menu || [];
@@ -76,14 +82,19 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
 
   const handleTableClick = (table: Table) => {
     if (rearrangeMode) return;
-    setSelectedTable(table);
     
-    // Use existing session start time or start a new one locally
+    // Set active session context
     const existingStartTime = table.sessionStartTime || Date.now();
     setSessionStartTime(existingStartTime);
+    setSelectedTableId(table.id);
     
+    // If table is occupied/billed, load the existing order
     if (table.status !== 'vacant') {
-      const existingOrder = orders.find(o => o.tableId === table.id && (o.status === 'pending' || o.status === 'billed'));
+      const existingOrder = orders.find(o => 
+        (o.id === table.currentOrderId) || 
+        (o.tableId === table.id && (o.status === 'pending' || o.status === 'billed'))
+      );
+      
       if (existingOrder) {
         setCart([...existingOrder.items]);
         setDiscount(existingOrder.discount || 0);
@@ -92,6 +103,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
       }
     }
     
+    // Default: Clear cart for a new session
     setCart([]); 
     setIsDirty(false);
     setDiscount(0);
@@ -143,11 +155,15 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     return { subtotal, total, discount: Number(discount) || 0 };
   };
 
-  const handlePlaceOrder = (status: 'pending' | 'billed' | 'paid', payment: PaymentMethod = '-') => {
-    if (!selectedTable || cart.length === 0) return;
+  const handlePlaceOrder = async (status: 'pending' | 'billed' | 'paid', payment: PaymentMethod = '-') => {
+    if (!selectedTableId || !selectedTable || cart.length === 0) return;
+    
     const { subtotal, total } = calculateTotal();
+    // Maintain a consistent order ID throughout the session
+    const orderId = selectedTable.currentOrderId || `#${Math.floor(Math.random() * 10000)}`;
+    
     const order: Order = {
-      id: `#${Math.floor(Math.random() * 10000)}`,
+      id: orderId,
       tableId: selectedTable.id,
       tableName: selectedTable.name,
       items: [...cart],
@@ -162,13 +178,18 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
       upiAmount: payment === 'Split' ? upiSplit : (payment === 'UPI' ? total : 0)
     };
 
+    // 1. Save the order to DB
     onOrderComplete(order, selectedTable.id);
     
+    // 2. Determine new table status
     const tableStatus = status === 'paid' ? 'vacant' : (status === 'billed' ? 'billed' : 'occupied');
+    
+    // 3. Update the table document with the latest session data
     onTableUpdate(selectedTable.id, { 
       status: tableStatus, 
-      orderValue: status === 'paid' ? undefined : total,
-      sessionStartTime: status === 'paid' ? undefined : sessionStartTime // Persist session start time
+      orderValue: status === 'paid' ? 0 : total,
+      sessionStartTime: status === 'paid' ? undefined : (selectedTable.sessionStartTime || sessionStartTime || Date.now()),
+      currentOrderId: status === 'paid' ? undefined : orderId
     });
     
     setIsDirty(false);
@@ -180,8 +201,9 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
 
     if (status === 'paid') {
       setCart([]);
-      setSelectedTable(null);
+      setSelectedTableId(null);
       setSessionStartTime(null);
+      setIsFullscreen(false);
     }
   };
 
@@ -204,7 +226,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     if (!selectedTable || cart.length === 0) return;
     const { subtotal, total } = calculateTotal();
     const dateStr = new Date().toLocaleString();
-    const billId = `#${Math.floor(Math.random() * 10000)}`;
+    const billId = selectedTable.currentOrderId || `#${Math.floor(Math.random() * 10000)}`;
 
     setPrintState('success');
     setIsDirty(false); 
@@ -263,7 +285,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     if (isDirty && cart.length > 0) {
       setIsExitGuardOpen(true);
     } else {
-      setSelectedTable(null);
+      setSelectedTableId(null);
       setSessionStartTime(null);
       setCart([]);
       setIsFullscreen(false);
@@ -274,7 +296,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     return (Number(val) || 0).toFixed(2);
   };
 
-  if (selectedTable) {
+  if (selectedTableId && selectedTable) {
     const totals = calculateTotal();
     const duration = calculateDurationMins(sessionStartTime);
     
@@ -369,7 +391,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         </div>
 
-        {/* POS Sidebar - Extended to bottom */}
+        {/* POS Sidebar */}
         <div className="w-[380px] bg-white flex flex-col border-l border-gray-200 shadow-2xl relative z-30 h-full">
           <div className="p-5 border-b border-gray-100 bg-white flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -504,7 +526,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
         {/* Modal: Settle Payment */}
         {isSettleModalOpen && (
           <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="bg-white rounded-3xl w-full max-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
               <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
                 <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Settle Payment</h3>
                 <button onClick={() => setIsSettleModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
@@ -582,7 +604,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         )}
 
-        {/* Modal: Exit Guard (Confirm Punch) */}
+        {/* Modal: Exit Guard */}
         {isExitGuardOpen && (
           <div className="fixed inset-0 bg-black/60 z-[610] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl w-full max-sm overflow-hidden shadow-2xl p-10 animate-in fade-in zoom-in duration-200">
@@ -596,10 +618,10 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                 </p>
                 <div className="flex flex-col gap-3">
                   <button 
-                    onClick={() => {
-                      handlePlaceOrder('pending');
+                    onClick={async () => {
+                      await handlePlaceOrder('pending');
                       setIsExitGuardOpen(false);
-                      setSelectedTable(null);
+                      setSelectedTableId(null);
                       setSessionStartTime(null);
                       setCart([]);
                       setIsFullscreen(false);
@@ -613,7 +635,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                       setCart([]);
                       setIsDirty(false);
                       setIsExitGuardOpen(false);
-                      setSelectedTable(null);
+                      setSelectedTableId(null);
                       setSessionStartTime(null);
                       setIsFullscreen(false);
                     }}
@@ -649,12 +671,17 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                   <button onClick={() => setIsClearModalOpen(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-200">No, Wait</button>
                   <button 
                     onClick={() => { 
-                      onTableUpdate(selectedTable!.id, { status: 'vacant', orderValue: 0, sessionStartTime: undefined });
+                      onTableUpdate(selectedTable!.id, { 
+                        status: 'vacant', 
+                        orderValue: 0, 
+                        sessionStartTime: undefined, 
+                        currentOrderId: undefined 
+                      });
                       setCart([]); 
                       setIsDirty(false); 
                       setDiscount(0); 
                       setIsClearModalOpen(false);
-                      setSelectedTable(null);
+                      setSelectedTableId(null);
                       setIsFullscreen(false);
                     }} 
                     className="flex-1 py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-red-700"
