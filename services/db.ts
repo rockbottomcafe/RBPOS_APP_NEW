@@ -1,5 +1,5 @@
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { initializeApp } from 'firebase/app';
 import { 
   getFirestore, 
   collection, 
@@ -13,7 +13,7 @@ import {
   orderBy, 
   Timestamp,
   deleteField
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+} from 'firebase/firestore';
 import { MenuItem, Table, Order, BusinessProfile, AppSettings } from '../types.ts';
 import { INITIAL_MENU, INITIAL_TABLES, INITIAL_PROFILE, INITIAL_SETTINGS } from '../constants.tsx';
 
