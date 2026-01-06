@@ -1,18 +1,20 @@
 
 import React, { useState } from 'react';
 import { Table, TableStatus } from '../types.ts';
-import { Plus, Trash2, Edit2, Layout, Save, X, Layers } from 'lucide-react';
+import { Plus, Trash2, Edit2, Layout, Save, X, Layers, AlertCircle } from 'lucide-react';
 
 interface TableSetupProps {
   tables: Table[];
   onUpdate: (tables: Table[]) => void;
+  onDeleteTable: (id: string) => void;
 }
 
-const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate }) => {
+const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate, onDeleteTable }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [tableToDelete, setTableToDelete] = useState<Table | null>(null);
 
-  // FIX: Casting sections to string[] to ensure s is string and resolve "Type 'unknown' is not assignable to type 'string'" on line 152
   const sections = Array.from(new Set(tables.map(t => t.section))) as string[];
 
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
@@ -40,10 +42,17 @@ const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate }) => {
     setEditingTable(null);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to remove this table?')) {
-      onUpdate(tables.filter(t => t.id !== id));
+  const confirmDelete = () => {
+    if (tableToDelete) {
+      onDeleteTable(tableToDelete.id);
+      setIsDeleteModalOpen(false);
+      setTableToDelete(null);
     }
+  };
+
+  const handleDeleteClick = (table: Table) => {
+    setTableToDelete(table);
+    setIsDeleteModalOpen(true);
   };
 
   return (
@@ -80,22 +89,26 @@ const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate }) => {
                     <div className="w-8 h-8 bg-white border border-gray-200 rounded flex items-center justify-center font-bold text-gray-700 shadow-xs">
                       {table.name}
                     </div>
-                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                      {table.status}
+                    <div className="flex flex-col">
+                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none mb-1">
+                        {table.status}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center space-x-1">
                     <button 
                       onClick={() => { setEditingTable(table); setIsModalOpen(true); }}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      title="Edit Table"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button 
-                      onClick={() => handleDelete(table.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                      onClick={() => handleDeleteClick(table)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      title="Delete Table"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -146,15 +159,15 @@ const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate }) => {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {sections.map(s => (
                     <button 
-                      key={s as string} 
+                      key={s} 
                       type="button"
                       onClick={(e) => {
                         const input = (e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement);
-                        if (input) input.value = s as string;
+                        if (input) input.value = s;
                       }}
                       className="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded"
                     >
-                      {s as string}
+                      {s}
                     </button>
                   ))}
                 </div>
@@ -166,6 +179,37 @@ const TableSetup: React.FC<TableSetupProps> = ({ tables, onUpdate }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-sm overflow-hidden shadow-2xl p-8 animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Removal</h3>
+              <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+                Are you sure you want to remove table <span className="font-bold text-gray-800">"{tableToDelete?.name}"</span>? Any active session data for this table will be lost.
+              </p>
+              <div className="flex w-full gap-3">
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-md active:scale-95"
+                >
+                  Delete Table
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

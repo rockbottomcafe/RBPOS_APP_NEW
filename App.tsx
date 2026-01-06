@@ -92,9 +92,16 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleTableDelete = useCallback(async (tableId: string) => {
+    try {
+      await db.deleteTable(tableId);
+    } catch (err) {
+      console.error("Table deletion failed:", err);
+    }
+  }, []);
+
   const handleTableSetupUpdate = useCallback(async (updatedTables: Table[]) => {
     try {
-      setTables(updatedTables);
       await db.setTables(updatedTables);
     } catch (err) {
       console.error("Table setup failed:", err);
@@ -206,7 +213,6 @@ const App: React.FC = () => {
 
           <div className={`flex items-center space-x-6 ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>
             <div className="text-right">
-              {/* Refined Digital Clock: Fixed small font and tabular-nums to prevent layout jumping */}
               <div className="text-[11px] font-black flex items-center justify-end tracking-tighter tabular-nums leading-none">
                 <span className="min-w-[70px] inline-block">
                   {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
@@ -251,7 +257,13 @@ const App: React.FC = () => {
             />
           )}
           {activeTab === 'menu' && <MenuMgmt menu={menu} onUpdate={handleMenuUpdate} />}
-          {activeTab === 'tablesetup' && <TableSetup tables={tables} onUpdate={handleTableSetupUpdate} />}
+          {activeTab === 'tablesetup' && (
+            <TableSetup 
+              tables={tables} 
+              onUpdate={handleTableSetupUpdate} 
+              onDeleteTable={handleTableDelete} 
+            />
+          )}
           {activeTab === 'history' && profile && (
             <OrderHistory orders={orders} settings={settings} profile={profile} />
           )}

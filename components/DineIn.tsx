@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Table, MenuItem, Order, OrderItem, PaymentMethod, BusinessProfile, AppSettings } from '../types.ts';
-import { Plus, Minus, X, Check, ArrowLeft, Trash2, Search, Layers, CreditCard, Banknote, Landmark, Smartphone, Tag, ReceiptText, Calculator, Printer, Clock, Maximize2, Minimize2 } from 'lucide-react';
+import { Plus, Minus, X, Check, ArrowLeft, Trash2, Search, Layers, CreditCard, Banknote, Landmark, Smartphone, Tag, ReceiptText, Calculator, Printer, Clock, Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
 
 interface DineInProps {
   tables: Table[];
@@ -161,24 +161,50 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
       upiAmount: payment === 'Split' ? upiSplit : (payment === 'UPI' ? total : 0)
     };
     onOrderComplete(order, selectedTable.id);
-    const tableStatus = status === 'paid' ? 'vacant' : (status === 'billed' ? 'billed' : 'occupied');
+    
+    const isSettled = status === 'paid';
+    const tableStatus = isSettled ? 'vacant' : (status === 'billed' ? 'billed' : 'occupied');
+    
+    // Use null for fields that need to be cleared in Firestore
     onTableUpdate(selectedTable.id, { 
       status: tableStatus, 
-      orderValue: status === 'paid' ? 0 : total,
-      sessionStartTime: status === 'paid' ? undefined : (selectedTable.sessionStartTime || sessionStartTime || Date.now()),
-      currentOrderId: status === 'paid' ? undefined : orderId
+      orderValue: isSettled ? 0 : total,
+      sessionStartTime: isSettled ? null as any : (selectedTable.sessionStartTime || sessionStartTime || Date.now()),
+      currentOrderId: isSettled ? null as any : orderId
     });
+
     setIsDirty(false);
     if (status === 'pending') {
       setPunchState('success');
       setTimeout(() => setPunchState('idle'), 1500);
     }
-    if (status === 'paid') {
+    if (isSettled) {
       setCart([]);
       setSelectedTableId(null);
       setSessionStartTime(null);
       setIsFullscreen(false);
     }
+  };
+
+  const handleClearOrder = () => {
+    if (!selectedTableId) return;
+    
+    // Reset table status to vacant and clear all active order session data
+    onTableUpdate(selectedTableId, {
+      status: 'vacant',
+      orderValue: 0,
+      sessionStartTime: null as any,
+      currentOrderId: null as any
+    });
+
+    // Reset local state
+    setCart([]);
+    setDiscount(0);
+    setIsDirty(false);
+    setIsClearModalOpen(false);
+    setSelectedTableId(null);
+    setSessionStartTime(null);
+    setIsFullscreen(false);
   };
 
   const printBill = () => {
@@ -580,14 +606,80 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         )}
 
-        {/* Modal: Exit Guard & Clear handled in original code */}
+        {/* Modal: Clear Order Confirmation */}
+        {isClearModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+              <div className="p-8 flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
+                  <Trash2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">Clear Current Order?</h3>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
+                  This will reset table <span className="text-gray-800">{selectedTable.name}</span> to vacant and permanently delete the current draft.
+                </p>
+                <div className="flex w-full gap-3">
+                  <button 
+                    onClick={() => setIsClearModalOpen(false)}
+                    className="flex-1 py-4 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleClearOrder}
+                    className="flex-1 py-4 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg active:scale-95"
+                  >
+                    Clear Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Exit Guard */}
+        {isExitGuardOpen && (
+          <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+              <div className="p-8 flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mb-6">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">Unsaved Changes</h3>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
+                  You have items in the cart that haven't been punched. Switching tables will lose these changes.
+                </p>
+                <div className="flex w-full gap-3">
+                  <button 
+                    onClick={() => setIsExitGuardOpen(false)}
+                    className="flex-1 py-4 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-all"
+                  >
+                    Stay Here
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsExitGuardOpen(false);
+                      setIsDirty(false);
+                      setSelectedTableId(null);
+                      setSessionStartTime(null);
+                      setCart([]);
+                      setIsFullscreen(false);
+                    }}
+                    className="flex-1 py-4 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95"
+                  >
+                    Exit Anyway
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Table view remains same */}
       <div className="flex justify-between items-center bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
         <div>
           <h2 className="text-2xl font-black text-gray-800 tracking-tight">Dine In Floors</h2>
