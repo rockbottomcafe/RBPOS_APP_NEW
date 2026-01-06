@@ -165,7 +165,6 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     const isSettled = status === 'paid';
     const tableStatus = isSettled ? 'vacant' : (status === 'billed' ? 'billed' : 'occupied');
     
-    // Use null for fields that need to be cleared in Firestore
     onTableUpdate(selectedTable.id, { 
       status: tableStatus, 
       orderValue: isSettled ? 0 : total,
@@ -188,16 +187,12 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
 
   const handleClearOrder = () => {
     if (!selectedTableId) return;
-    
-    // Reset table status to vacant and clear all active order session data
     onTableUpdate(selectedTableId, {
       status: 'vacant',
       orderValue: 0,
       sessionStartTime: null as any,
       currentOrderId: null as any
     });
-
-    // Reset local state
     setCart([]);
     setDiscount(0);
     setIsDirty(false);
@@ -315,9 +310,9 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     
     return (
       <div className={`flex overflow-hidden bg-gray-50 transition-all duration-300 animate-in fade-in ${
-        isFullscreen ? 'fixed inset-0 z-[500] h-screen w-screen' : 'h-[calc(100vh-180px)] -m-8'
+        isFullscreen ? 'fixed inset-0 z-[500] h-screen w-screen' : 'h-[calc(100vh-140px)] w-full'
       }`}>
-        <div className="flex-1 p-6 overflow-y-auto scrollbar-hide flex flex-col">
+        <div className="flex-1 p-6 overflow-y-auto scrollbar-hide flex flex-col min-w-0">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 rounded-lg shadow-sm">
@@ -349,31 +344,33 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 mb-6 sticky top-0 bg-gray-50/95 py-2 z-20 backdrop-blur-md">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Find item..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-              />
-            </div>
-            <div className="flex space-x-2 overflow-x-auto scrollbar-hide pb-1">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border whitespace-nowrap ${
-                    selectedCategory === cat 
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
-                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 shadow-sm'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+          <div className="mb-6 sticky top-0 bg-gray-50/95 py-2 z-20 backdrop-blur-md">
+            <div className="flex flex-col gap-4">
+              <div className="relative max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Find item..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border whitespace-nowrap ${
+                      selectedCategory === cat 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
+                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 shadow-sm'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -403,7 +400,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         </div>
 
-        <div className="w-[380px] bg-white flex flex-col border-l border-gray-200 shadow-2xl relative z-30 h-full overflow-hidden">
+        <div className="w-[360px] bg-white flex flex-col border-l border-gray-200 shadow-2xl relative z-30 h-full overflow-hidden flex-shrink-0">
           <div className="p-5 border-b border-gray-100 bg-white flex justify-between items-center flex-shrink-0">
             <div className="flex items-center space-x-2">
               <ReceiptText className="w-5 h-5 text-gray-400" />
@@ -447,8 +444,8 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
 
           <div className="bg-white border-t border-gray-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] flex-shrink-0">
-            <div className="p-5 space-y-5">
-              <div className="space-y-3">
+            <div className="p-5 space-y-4">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <span>Subtotal</span>
                   <span className="text-gray-600">₹{formatPrice(totals.subtotal)}</span>
@@ -466,32 +463,32 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                         setDiscount(Math.max(0, parseFloat(e.target.value) || 0));
                         setIsDirty(true);
                       }}
-                      className="w-20 text-right text-xs font-black text-red-600 bg-red-50/50 border border-red-100 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-red-200"
+                      className="w-16 text-right text-xs font-black text-red-600 bg-red-50/50 border border-red-100 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-red-200"
                     />
                   </div>
                 </div>
-                <div className="pt-3 border-t border-dashed border-gray-200 flex justify-between items-center">
+                <div className="pt-2 border-t border-dashed border-gray-200 flex justify-between items-center">
                   <span className="text-xs font-black text-gray-800 uppercase tracking-widest">Total Payable</span>
-                  <span className="text-2xl font-black text-blue-600">₹{formatPrice(totals.total)}</span>
+                  <span className="text-xl font-black text-blue-600">₹{formatPrice(totals.total)}</span>
                 </div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <button 
                   onClick={() => handlePlaceOrder('pending')}
-                  className={`w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
                     punchState === 'success' ? 'bg-green-600 text-white' : 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500'
                   }`}
                 >
                   {punchState === 'success' ? <><Check className="w-4 h-4" /> Punched!</> : <><ReceiptText className="w-4 h-4" /> Punch Order</>}
                 </button>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <button 
                     onClick={printBill}
-                    className={`py-3 border-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                    className={`py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                       printState === 'success' ? 'bg-green-50 border-green-600 text-green-700' : 'bg-white border-gray-100 text-gray-600 hover:border-gray-200 shadow-sm'
                     }`}
                   >
-                    {printState === 'success' ? <><Check className="w-3 h-3" /> Printed!</> : <><Printer className="w-3 h-3" /> Print Bill</>}
+                    <Printer className="w-3 h-3" /> Print Bill
                   </button>
                   <button 
                     onClick={() => {
@@ -504,24 +501,24 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                       settleState === 'success' ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                   >
-                    {settleState === 'success' ? <><Check className="w-3 h-3" /> Settled!</> : <><Check className="w-3 h-3" /> Settle</>}
+                    <Check className="w-3 h-3" /> Settle
                   </button>
                 </div>
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-0.5">
                    <button 
                     onClick={() => setIsClearModalOpen(true)}
-                    className="flex-1 py-2 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all"
+                    className="flex-1 py-1.5 text-red-500 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all"
                   >
                     Clear Order
                   </button>
-                  <div className="w-px h-4 bg-gray-100"></div>
+                  <div className="w-px h-3 bg-gray-100"></div>
                   <button 
                     onClick={handleMiscCharge}
-                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                    className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${
                       miscState === 'success' ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:bg-gray-50'
                     }`}
                   >
-                    {miscState === 'success' ? 'Added!' : 'Misc Charge'}
+                    Misc Charge
                   </button>
                 </div>
               </div>
@@ -529,7 +526,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         </div>
 
-        {/* Modal: Settle Payment */}
+        {/* Modals remain the same */}
         {isSettleModalOpen && (
           <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl w-full max-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
@@ -606,7 +603,6 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         )}
 
-        {/* Modal: Clear Order Confirmation */}
         {isClearModalOpen && (
           <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -637,7 +633,6 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         )}
 
-        {/* Modal: Exit Guard */}
         {isExitGuardOpen && (
           <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
