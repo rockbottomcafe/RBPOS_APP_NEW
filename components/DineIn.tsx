@@ -129,10 +129,16 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     setIsDirty(true);
     setCart(prev => prev.map(i => {
       if (i.id === itemId) {
-        return { ...i, qty: Math.max(0, i.qty + delta) };
+        // Only reduce the quantity till 1, but should not delete the menu item itself.
+        return { ...i, qty: Math.max(1, i.qty + delta) };
       }
       return i;
-    }).filter(i => i.qty > 0));
+    }));
+  };
+
+  const removeFromCart = (itemId: string) => {
+    setIsDirty(true);
+    setCart(prev => prev.filter(i => i.id !== itemId));
   };
 
   const calculateTotal = () => {
@@ -433,10 +439,19 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                     <h5 className="text-[11px] font-bold text-gray-800 line-clamp-1">{item.name}</h5>
                     <div className="text-[10px] font-black text-blue-600 mt-0.5">₹{formatPrice(item.price)}</div>
                   </div>
-                  <div className="flex items-center bg-gray-50 rounded-lg border border-gray-100 p-0.5">
-                    <button onClick={() => updateCartQty(item.id, -1)} className="p-1 hover:bg-white hover:shadow-sm rounded text-gray-400 transition-all"><Minus className="w-3 h-3" /></button>
-                    <span className="w-6 text-center text-[10px] font-black text-gray-800">{item.qty}</span>
-                    <button onClick={() => updateCartQty(item.id, 1)} className="p-1 hover:bg-white hover:shadow-sm rounded text-gray-400 transition-all"><Plus className="w-3 h-3" /></button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-gray-50 rounded-lg border border-gray-100 p-0.5">
+                      <button onClick={() => updateCartQty(item.id, -1)} className="p-1 hover:bg-white hover:shadow-sm rounded text-gray-400 transition-all"><Minus className="w-3 h-3" /></button>
+                      <span className="w-6 text-center text-[10px] font-black text-gray-800">{item.qty}</span>
+                      <button onClick={() => updateCartQty(item.id, 1)} className="p-1 hover:bg-white hover:shadow-sm rounded text-gray-400 transition-all"><Plus className="w-3 h-3" /></button>
+                    </div>
+                    <button 
+                      onClick={() => removeFromCart(item.id)} 
+                      className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      title="Remove Item"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))
