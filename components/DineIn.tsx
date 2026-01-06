@@ -315,7 +315,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     
     return (
       <div className={`flex overflow-hidden bg-gray-50 transition-all duration-300 animate-in fade-in ${
-        isFullscreen ? 'fixed inset-0 z-[500] h-screen w-screen' : 'h-[calc(100vh-100px)] -m-8'
+        isFullscreen ? 'fixed inset-0 z-[500] h-screen w-screen' : 'h-[calc(100vh-180px)] -m-8'
       }`}>
         <div className="flex-1 p-6 overflow-y-auto scrollbar-hide flex flex-col">
           <div className="flex justify-between items-center mb-6">
@@ -403,8 +403,8 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         </div>
 
-        <div className="w-[380px] bg-white flex flex-col border-l border-gray-200 shadow-2xl relative z-30 h-full">
-          <div className="p-5 border-b border-gray-100 bg-white flex justify-between items-center">
+        <div className="w-[380px] bg-white flex flex-col border-l border-gray-200 shadow-2xl relative z-30 h-full overflow-hidden">
+          <div className="p-5 border-b border-gray-100 bg-white flex justify-between items-center flex-shrink-0">
             <div className="flex items-center space-x-2">
               <ReceiptText className="w-5 h-5 text-gray-400" />
               <div className="flex flex-col">
@@ -414,7 +414,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                 </span>
               </div>
             </div>
-            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex-shrink-0 ${
               selectedTable.status === 'vacant' ? 'bg-green-100 text-green-700' : 
               selectedTable.status === 'billed' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
             }`}>
@@ -446,7 +446,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
             )}
           </div>
 
-          <div className="bg-white border-t border-gray-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] sticky bottom-0">
+          <div className="bg-white border-t border-gray-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] flex-shrink-0">
             <div className="p-5 space-y-5">
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
