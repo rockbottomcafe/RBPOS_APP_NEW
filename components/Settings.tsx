@@ -1,7 +1,27 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppSettings, BusinessProfile, ThemeType, InvoiceLine } from '../types.ts';
-import { Settings as SettingsIcon, Image as ImageIcon, FileText, Printer, CheckCircle, Store, MapPin, Tag, X, Palette, Moon, Sun, Leaf, Monitor, Plus, Trash2, AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react';
+import { 
+  Settings as SettingsIcon, 
+  Image as ImageIcon, 
+  FileText, 
+  Printer, 
+  CheckCircle, 
+  Store, 
+  Tag, 
+  X, 
+  Moon, 
+  Sun, 
+  Leaf, 
+  Monitor, 
+  Plus, 
+  Minus,
+  Trash2, 
+  AlignLeft, 
+  AlignCenter, 
+  AlignRight, 
+  Type 
+} from 'lucide-react';
 
 interface SettingsProps {
   settings: AppSettings;
@@ -10,15 +30,100 @@ interface SettingsProps {
   onSaveProfile: (profile: BusinessProfile) => void;
 }
 
+interface LineEditorProps {
+  line: InvoiceLine;
+  type: 'header' | 'footer';
+  onUpdate: (type: 'header' | 'footer', id: string, updates: Partial<InvoiceLine>) => void;
+  onRemove: (type: 'header' | 'footer', id: string) => void;
+}
+
+/**
+ * LineEditor: Independent component for managing a single line of the invoice.
+ * Wired to unique IDs to prevent cross-line interference.
+ */
+const LineEditor: React.FC<LineEditorProps> = ({ line, type, onUpdate, onRemove }) => (
+  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 group animate-in slide-in-from-top-2 duration-200">
+    <input 
+      value={line.text}
+      onChange={(e) => onUpdate(type, line.id, { text: e.target.value })}
+      placeholder="Enter text..."
+      className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+    />
+    
+    {/* Font Size Controls */}
+    <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 space-x-1">
+      <button 
+        type="button"
+        onClick={() => onUpdate(type, line.id, { size: Math.max(8, line.size - 1) })} 
+        className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"
+      >
+        <Minus className="w-3.5 h-3.5" />
+      </button>
+      <span className="text-[10px] font-black w-7 text-center tabular-nums">{line.size}</span>
+      <button 
+        type="button"
+        onClick={() => onUpdate(type, line.id, { size: Math.min(32, line.size + 1) })} 
+        className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"
+      >
+        <Plus className="w-3.5 h-3.5" />
+      </button>
+    </div>
+
+    {/* Alignment Controls */}
+    <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 space-x-1">
+      <button 
+        type="button"
+        onClick={() => onUpdate(type, line.id, { align: 'left' })}
+        className={`p-1 rounded transition-all ${line.align === 'left' ? 'bg-blue-100 text-blue-600 shadow-sm' : 'text-gray-400 hover:bg-gray-100'}`}
+      ><AlignLeft className="w-3.5 h-3.5" /></button>
+      <button 
+        type="button"
+        onClick={() => onUpdate(type, line.id, { align: 'center' })}
+        className={`p-1 rounded transition-all ${line.align === 'center' ? 'bg-blue-100 text-blue-600 shadow-sm' : 'text-gray-400 hover:bg-gray-100'}`}
+      ><AlignCenter className="w-3.5 h-3.5" /></button>
+      <button 
+        type="button"
+        onClick={() => onUpdate(type, line.id, { align: 'right' })}
+        className={`p-1 rounded transition-all ${line.align === 'right' ? 'bg-blue-100 text-blue-600 shadow-sm' : 'text-gray-400 hover:bg-gray-100'}`}
+      ><AlignRight className="w-3.5 h-3.5" /></button>
+    </div>
+
+    {/* Bold Toggle */}
+    <button 
+      type="button"
+      onClick={() => onUpdate(type, line.id, { bold: !line.bold })}
+      className={`p-2 rounded-lg border transition-all flex items-center justify-center w-8 h-8 ${line.bold ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-100'}`}
+    >
+      <span className="text-[10px] font-black">B</span>
+    </button>
+
+    {/* Delete Button */}
+    <button 
+      type="button"
+      onClick={() => onRemove(type, line.id)}
+      className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+      title="Delete Line"
+    >
+      <Trash2 className="w-4 h-4" />
+    </button>
+  </div>
+);
+
 const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, onSaveProfile }) => {
-  const [localSettings, setLocalSettings] = useState<AppSettings>({
-    ...settings,
-    headerLines: settings.headerLines || [],
-    footerLines: settings.footerLines || [],
-    bodyFontSize: settings.bodyFontSize || 12
-  });
+  const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [localProfile, setLocalProfile] = useState<BusinessProfile>(profile);
   const [isSaved, setIsSaved] = useState(false);
+
+  // Sync with incoming props if they change externally (like Firestore updates)
+  useEffect(() => {
+    setLocalSettings(settings);
+    setLocalProfile(profile);
+  }, [settings, profile]);
+
+  const generateUniqueId = () => {
+    // Enhanced entropy to prevent ID collisions
+    return `line_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,39 +145,43 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
 
   const addLine = (type: 'header' | 'footer') => {
     const newLine: InvoiceLine = {
-      id: `line_${Date.now()}`,
-      text: 'New Line',
+      id: generateUniqueId(),
+      text: type === 'header' ? 'New Header Line' : 'New Footer Line',
       size: 12,
       bold: false,
       align: 'center'
     };
-    if (type === 'header') {
-      setLocalSettings(prev => ({ ...prev, headerLines: [...prev.headerLines, newLine] }));
-    } else {
-      setLocalSettings(prev => ({ ...prev, footerLines: [...prev.footerLines, newLine] }));
-    }
+    
+    setLocalSettings(prev => {
+      const field = type === 'header' ? 'headerLines' : 'footerLines';
+      const existing = prev[field] || [];
+      return { 
+        ...prev, 
+        [field]: [...existing, newLine] 
+      };
+    });
   };
 
   const removeLine = (type: 'header' | 'footer', id: string) => {
-    if (type === 'header') {
-      setLocalSettings(prev => ({ ...prev, headerLines: prev.headerLines.filter(l => l.id !== id) }));
-    } else {
-      setLocalSettings(prev => ({ ...prev, footerLines: prev.footerLines.filter(l => l.id !== id) }));
-    }
+    setLocalSettings(prev => {
+      const field = type === 'header' ? 'headerLines' : 'footerLines';
+      const existing = prev[field] || [];
+      return { 
+        ...prev, 
+        [field]: existing.filter(l => l.id !== id) 
+      };
+    });
   };
 
   const updateLine = (type: 'header' | 'footer', id: string, updates: Partial<InvoiceLine>) => {
-    if (type === 'header') {
-      setLocalSettings(prev => ({
+    setLocalSettings(prev => {
+      const field = type === 'header' ? 'headerLines' : 'footerLines';
+      const existing = prev[field] || [];
+      return {
         ...prev,
-        headerLines: prev.headerLines.map(l => l.id === id ? { ...l, ...updates } : l)
-      }));
-    } else {
-      setLocalSettings(prev => ({
-        ...prev,
-        footerLines: prev.footerLines.map(l => l.id === id ? { ...l, ...updates } : l)
-      }));
-    }
+        [field]: existing.map(l => l.id === id ? { ...l, ...updates } : l)
+      };
+    });
   };
 
   const themes: { id: ThemeType; label: string; icon: any; color: string }[] = [
@@ -81,48 +190,6 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
     { id: 'Eco-Green', label: 'Eco-Green', icon: Leaf, color: 'bg-emerald-600' },
     { id: 'Modern Minimalist', label: 'Modern', icon: Monitor, color: 'bg-gray-400' },
   ];
-
-  // Fix: Explicitly type LineEditor as React.FC to allow standard React props like 'key' in JSX map calls.
-  const LineEditor: React.FC<{ line: InvoiceLine, type: 'header' | 'footer' }> = ({ line, type }) => (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 group">
-      <input 
-        value={line.text}
-        onChange={(e) => updateLine(type, line.id, { text: e.target.value })}
-        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
-      />
-      <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 space-x-1">
-        <button onClick={() => updateLine(type, line.id, { size: Math.max(8, line.size - 1) })} className="p-1 hover:bg-gray-100 rounded text-gray-500"><X className="w-3 h-3 rotate-45" /></button>
-        <span className="text-[10px] font-black w-6 text-center">{line.size}</span>
-        <button onClick={() => updateLine(type, line.id, { size: Math.min(24, line.size + 1) })} className="p-1 hover:bg-gray-100 rounded text-gray-500"><Plus className="w-3 h-3" /></button>
-      </div>
-      <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 space-x-1">
-        <button 
-          onClick={() => updateLine(type, line.id, { align: 'left' })}
-          className={`p-1 rounded ${line.align === 'left' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'}`}
-        ><AlignLeft className="w-3.5 h-3.5" /></button>
-        <button 
-          onClick={() => updateLine(type, line.id, { align: 'center' })}
-          className={`p-1 rounded ${line.align === 'center' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'}`}
-        ><AlignCenter className="w-3.5 h-3.5" /></button>
-        <button 
-          onClick={() => updateLine(type, line.id, { align: 'right' })}
-          className={`p-1 rounded ${line.align === 'right' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'}`}
-        ><AlignRight className="w-3.5 h-3.5" /></button>
-      </div>
-      <button 
-        onClick={() => updateLine(type, line.id, { bold: !line.bold })}
-        className={`p-2 rounded-lg border ${line.bold ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-100'}`}
-      >
-        <span className="text-[10px] font-black">B</span>
-      </button>
-      <button 
-        onClick={() => removeLine(type, line.id)}
-        className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
@@ -148,7 +215,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
         </div>
 
         <div className="p-8 space-y-12">
-          {/* Theme & Store Details Simplified for space */}
+          {/* Business Profile Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-6">
               <div className="flex items-center space-x-2 text-blue-600">
@@ -204,13 +271,13 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
                   <div className="flex items-center mt-2 space-x-4">
                     <button 
                       onClick={() => setLocalSettings(s => ({...s, showLogoOnBill: !s.showLogoOnBill}))}
-                      className={`text-[9px] font-black uppercase tracking-tight ${localSettings.showLogoOnBill ? 'text-blue-600' : 'text-gray-400'}`}
+                      className={`text-[9px] font-black uppercase tracking-tight transition-colors ${localSettings.showLogoOnBill ? 'text-blue-600 font-black' : 'text-gray-400 font-bold'}`}
                     >
                       {localSettings.showLogoOnBill ? 'Logo Visible' : 'Logo Hidden'}
                     </button>
                     <button 
                       onClick={() => setLocalSettings(s => ({...s, showAddressOnBill: !s.showAddressOnBill}))}
-                      className={`text-[9px] font-black uppercase tracking-tight ${localSettings.showAddressOnBill ? 'text-blue-600' : 'text-gray-400'}`}
+                      className={`text-[9px] font-black uppercase tracking-tight transition-colors ${localSettings.showAddressOnBill ? 'text-blue-600 font-black' : 'text-gray-400 font-bold'}`}
                     >
                       {localSettings.showAddressOnBill ? 'Addr Visible' : 'Addr Hidden'}
                     </button>
@@ -220,7 +287,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
             </div>
           </div>
 
-          {/* Invoice Template Designer */}
+          {/* Invoice Designer Section */}
           <div className="space-y-8 pt-12 border-t border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -235,9 +302,8 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              {/* Designer Controls */}
               <div className="space-y-10">
-                {/* Header Lines */}
+                {/* Header Section Editor */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center">
@@ -245,19 +311,25 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
                     </h3>
                     <button 
                       onClick={() => addLine('header')}
-                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="space-y-2">
-                    {localSettings.headerLines.map(line => (
-                      <LineEditor key={line.id} line={line} type="header" />
+                    {(localSettings.headerLines || []).map(line => (
+                      <LineEditor 
+                        key={line.id} 
+                        line={line} 
+                        type="header" 
+                        onUpdate={updateLine}
+                        onRemove={removeLine}
+                      />
                     ))}
                   </div>
                 </div>
 
-                {/* Body Settings */}
+                {/* Global Font Size Control */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center">
                     <Type className="w-3.5 h-3.5 mr-2" /> Global Typography
@@ -265,14 +337,24 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Bill Body Font Size</span>
                     <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1.5 space-x-3">
-                      <button onClick={() => setLocalSettings(s => ({...s, bodyFontSize: Math.max(8, s.bodyFontSize - 1)}))} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><X className="w-4 h-4 rotate-45" /></button>
-                      <span className="text-sm font-black w-8 text-center">{localSettings.bodyFontSize}px</span>
-                      <button onClick={() => setLocalSettings(s => ({...s, bodyFontSize: Math.min(20, s.bodyFontSize + 1)}))} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><Plus className="w-4 h-4" /></button>
+                      <button 
+                        onClick={() => setLocalSettings(s => ({...s, bodyFontSize: Math.max(8, s.bodyFontSize - 1)}))} 
+                        className="p-1.5 hover:bg-gray-100 rounded text-gray-500 transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-black w-8 text-center tabular-nums">{localSettings.bodyFontSize}px</span>
+                      <button 
+                        onClick={() => setLocalSettings(s => ({...s, bodyFontSize: Math.min(20, s.bodyFontSize + 1)}))} 
+                        className="p-1.5 hover:bg-gray-100 rounded text-gray-500 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Footer Lines */}
+                {/* Footer Section Editor */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center">
@@ -280,32 +362,38 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
                     </h3>
                     <button 
                       onClick={() => addLine('footer')}
-                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                      className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="space-y-2">
-                    {localSettings.footerLines.map(line => (
-                      <LineEditor key={line.id} line={line} type="footer" />
+                    {(localSettings.footerLines || []).map(line => (
+                      <LineEditor 
+                        key={line.id} 
+                        line={line} 
+                        type="footer" 
+                        onUpdate={updateLine}
+                        onRemove={removeLine}
+                      />
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Thermal Printer Preview */}
+              {/* Thermal Printer Live Preview */}
               <div className="flex flex-col items-center">
                 <div className="sticky top-24">
                   <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 text-center">80mm Live Preview</h3>
-                  <div className="w-[300px] bg-white shadow-2xl rounded-sm border-t-8 border-gray-800 p-6 font-mono relative overflow-hidden flex flex-col items-center">
-                    {/* Thermal Paper Texture overlay effect */}
+                  <div className="w-[300px] bg-white shadow-2xl rounded-sm border-t-8 border-gray-800 p-6 font-mono relative overflow-hidden flex flex-col items-center min-h-[400px]">
                     <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-gray-50/5 to-transparent opacity-50"></div>
                     
                     {localSettings.showLogoOnBill && localSettings.logoUrl && (
                       <img src={localSettings.logoUrl} className="max-h-16 max-w-full object-contain mb-4 grayscale opacity-80" />
                     )}
 
-                    {localSettings.headerLines.map(line => (
+                    {/* Rendered Header Lines */}
+                    {(localSettings.headerLines || []).map(line => (
                       <div 
                         key={line.id} 
                         style={{ 
@@ -326,6 +414,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
                       </div>
                     )}
 
+                    {/* Dummy Body Content */}
                     <div className="w-full mt-4 space-y-1.5" style={{ fontSize: `${localSettings.bodyFontSize}px` }}>
                       <div className="flex justify-between border-b border-dashed border-gray-200 pb-1 font-bold">
                         <span>Items</span>
@@ -349,8 +438,9 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
                       </div>
                     </div>
 
+                    {/* Rendered Footer Lines */}
                     <div className="mt-6 w-full space-y-1">
-                      {localSettings.footerLines.map(line => (
+                      {(localSettings.footerLines || []).map(line => (
                         <div 
                           key={line.id} 
                           style={{ 
@@ -366,7 +456,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
                       ))}
                     </div>
 
-                    {/* Receipt Tear Effect */}
+                    {/* Aesthetic Receipt Tear-off Edge */}
                     <div className="absolute -bottom-1 left-0 right-0 flex justify-between">
                        {[...Array(15)].map((_, i) => (
                          <div key={i} className="w-4 h-4 bg-gray-50 rotate-45 transform translate-y-2"></div>
