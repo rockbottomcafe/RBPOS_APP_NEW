@@ -1,117 +1,144 @@
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  onSnapshot, 
+  setDoc, 
+  updateDoc, 
+  getDoc, 
+  query, 
+  orderBy, 
+  Timestamp 
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { MenuItem, Table, Order, BusinessProfile, AppSettings } from '../types.ts';
 import { INITIAL_MENU, INITIAL_TABLES, INITIAL_PROFILE, INITIAL_SETTINGS } from '../constants.tsx';
 
 /**
- * FirestoreService handles data persistence.
- * Note: Collections are created automatically in Firestore on the first write.
+ * Firebase Configuration
+ * These values are injected via process.env. 
+ * If you are running locally, ensure these match your Firebase Project.
  */
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyB-cPRYfJPeFmFSoxa3l9HyhJX1tmoaoFs", 
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "myrbpos.firebaseapp.com",
+  projectId: process.env.FIREBASE_PROJECT_ID || "myrbpos",
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "myrbpos.firebasestorage.app",
+  messagingSenderId: process.env.FIREBASE_SENDER_ID || "29530955620",
+  appId: process.env.FIREBASE_APP_ID || "1:29530955620:web:cf22aa54c4952a8a786471"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const firestore = getFirestore(app);
+
 class FirestoreService {
-  private getData<T>(key: string, initial: T): T {
-    const data = localStorage.getItem(key);
+  /**
+   * Tests if the connection to Firestore is established and authorized.
+   */
+  async testConnection(): Promise<boolean> {
     try {
-      return data ? JSON.parse(data) : initial;
-    } catch (error) {
-      console.error(`Error parsing LocalStorage key "${key}":`, error);
-      return initial;
+      // Check for a specific config doc. If Project ID is 'YOUR_PROJECT_ID', this will fail.
+      if (firebaseConfig.projectId.includes("YOUR_PROJECT_ID") || firebaseConfig.projectId.includes("your-project-id")) {
+        console.error("Firestore Error: You are still using placeholder Project IDs. Please update services/db.ts with your Firebase keys.");
+        return false;
+      }
+      
+      const testDoc = await getDoc(doc(firestore, 'config', 'app_settings'));
+      return true;
+    } catch (e: any) {
+      if (e.code === 'permission-denied') {
+        console.error("Firestore Error: Permission Denied. Please update your Firestore Security Rules in the Firebase Console.");
+      } else {
+        console.error("Firestore Connection Error:", e);
+      }
+      return false;
     }
   }
 
-  private setData(key: string, data: any): void {
-    localStorage.setItem(key, JSON.stringify(data));
-    window.dispatchEvent(new CustomEvent('db-update', { detail: { key } }));
-  }
-
-  constructor() {
-    this.seedInitialData();
-  }
-
-  private async seedInitialData() {
-    if (!localStorage.getItem('menu_items')) this.setData('menu_items', INITIAL_MENU);
-    if (!localStorage.getItem('tables')) this.setData('tables', INITIAL_TABLES);
-    if (!localStorage.getItem('business_profile')) this.setData('business_profile', INITIAL_PROFILE);
-    if (!localStorage.getItem('app_settings')) this.setData('app_settings', INITIAL_SETTINGS);
-    if (!localStorage.getItem('orders')) this.setData('orders', []);
-  }
-
-  async testConnection(): Promise<boolean> {
-    return true; // LocalStorage is always available
-  }
-
+  // --- MENU ITEMS ---
+  
   subscribeToMenu(callback: (items: MenuItem[]) => void) {
-    const handler = (event: any) => {
-      if (!event.detail || event.detail.key === 'menu_items') {
-        callback(this.getData('menu_items', INITIAL_MENU));
-      }
-    };
-    window.addEventListener('db-update' as any, handler);
-    callback(this.getData('menu_items', INITIAL_MENU));
-    return () => window.removeEventListener('db-update' as any, handler);
+    const q = query(collection(firestore, 'menu_items'), orderBy('category'));
+    return onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as MenuItem));
+      if (items.length === 0) callback(INITIAL_MENU);
+      else callback(items);
+    }, (err) => console.error("Menu Subscription Error:", err));
   }
 
   async updateMenu(items: MenuItem[]) {
-    this.setData('menu_items', items);
+    for (const item of items) {
+      await setDoc(doc(firestore, 'menu_items', item.id), item);
+    }
   }
 
+  // --- TABLES ---
+
   subscribeToTables(callback: (tables: Table[]) => void) {
-    const handler = (event: any) => {
-      if (!event.detail || event.detail.key === 'tables') {
-        callback(this.getData('tables', INITIAL_TABLES));
-      }
-    };
-    window.addEventListener('db-update' as any, handler);
-    callback(this.getData('tables', INITIAL_TABLES));
-    return () => window.removeEventListener('db-update' as any, handler);
+    return onSnapshot(collection(firestore, 'tables'), (snapshot) => {
+      const tables = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Table));
+      if (tables.length === 0) callback(INITIAL_TABLES);
+      else callback(tables);
+    }, (err) => console.error("Table Subscription Error:", err));
   }
 
   async setTables(tables: Table[]) {
-    this.setData('tables', tables);
+    for (const table of tables) {
+      await setDoc(doc(firestore, 'tables', table.id), table);
+    }
   }
 
   async updateTable(id: string, updates: Partial<Table>) {
-    const tables = this.getData<Table[]>('tables', INITIAL_TABLES);
-    const updated = tables.map(t => t.id === id ? { ...t, ...updates } : t);
-    this.setData('tables', updated);
+    await updateDoc(doc(firestore, 'tables', id), updates);
   }
 
+  // --- ORDERS ---
+
   subscribeToOrders(callback: (orders: Order[]) => void) {
-    const handler = (event: any) => {
-      if (!event.detail || event.detail.key === 'orders') {
-        callback(this.getData('orders', []));
-      }
-    };
-    window.addEventListener('db-update' as any, handler);
-    callback(this.getData('orders', []));
-    return () => window.removeEventListener('db-update' as any, handler);
+    const q = query(collection(firestore, 'orders'), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const orders = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Order));
+      callback(orders);
+    }, (err) => console.error("Orders Subscription Error:", err));
   }
 
   async createOrder(order: Order) {
-    const orders = this.getData<Order[]>('orders', []);
     const docId = order.id.startsWith('ORD_') ? order.id : `ORD_${order.id.replace('#', '')}`;
-    const filtered = orders.filter(o => o.id !== order.id && o.id !== docId);
-    this.setData('orders', [{ ...order, id: docId }, ...filtered]);
+    await setDoc(doc(firestore, 'orders', docId), {
+      ...order,
+      id: docId,
+      serverTimestamp: Timestamp.now()
+    });
   }
 
+  // --- CONFIG (SINGLETONS) ---
+
   subscribeToSettings(callback: (settings: AppSettings) => void) {
-    const handler = (event: any) => {
-      if (!event.detail || event.detail.key === 'app_settings') {
-        callback(this.getData('app_settings', INITIAL_SETTINGS));
+    return onSnapshot(doc(firestore, 'config', 'app_settings'), (docSnap) => {
+      if (docSnap.exists()) {
+        callback(docSnap.data() as AppSettings);
+      } else {
+        this.updateSettings(INITIAL_SETTINGS);
+        callback(INITIAL_SETTINGS);
       }
-    };
-    window.addEventListener('db-update' as any, handler);
-    callback(this.getData('app_settings', INITIAL_SETTINGS));
-    return () => window.removeEventListener('db-update' as any, handler);
+    });
   }
 
   async updateSettings(settings: AppSettings) {
-    this.setData('app_settings', settings);
+    await setDoc(doc(firestore, 'config', 'app_settings'), settings);
   }
 
   async getProfile(): Promise<BusinessProfile | null> {
-    return this.getData('business_profile', INITIAL_PROFILE);
+    const snap = await getDoc(doc(firestore, 'config', 'business_profile'));
+    if (snap.exists()) return snap.data() as BusinessProfile;
+    await this.updateProfile(INITIAL_PROFILE);
+    return INITIAL_PROFILE;
   }
 
   async updateProfile(profile: BusinessProfile) {
-    this.setData('business_profile', profile);
+    await setDoc(doc(firestore, 'config', 'business_profile'), profile);
   }
 }
 

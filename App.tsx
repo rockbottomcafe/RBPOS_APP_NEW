@@ -26,7 +26,6 @@ const App: React.FC = () => {
   const [dbStatus, setDbStatus] = useState<'testing' | 'connected' | 'error'>('testing');
 
   useEffect(() => {
-    // Safety net: Force hide loading screen after 5 seconds
     const safetyTimer = setTimeout(() => {
       if (loading) {
         console.warn("Establishing connection taking longer than expected. Proceeding...");
@@ -38,8 +37,6 @@ const App: React.FC = () => {
       try {
         const isConnected = await db.testConnection();
         setDbStatus(isConnected ? 'connected' : 'error');
-        
-        // If we can't connect, don't wait for subscriptions to finish loading
         if (!isConnected) {
           setLoading(false);
         }
@@ -54,7 +51,7 @@ const App: React.FC = () => {
 
     const unsubTables = db.subscribeToTables((data) => {
       setTables(data);
-      setLoading(false); // Resolve loading when first data chunk arrives
+      setLoading(false);
       setDbStatus('connected');
     });
     
@@ -147,12 +144,6 @@ const App: React.FC = () => {
             <h2 className="text-xl font-black text-gray-800 tracking-tighter uppercase">Rock Bottom POS</h2>
             <p className="text-sm text-gray-400 font-bold animate-pulse mt-1">Establishing Secure Cloud Link...</p>
           </div>
-          <div className="mt-12 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center space-x-3 max-w-xs">
-            <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-tight">
-              Synchronizing floor plans and menu inventory...
-            </p>
-          </div>
         </div>
       </div>
     );
@@ -215,13 +206,16 @@ const App: React.FC = () => {
 
           <div className={`flex items-center space-x-6 ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>
             <div className="text-right">
-              <div className="text-sm font-black flex items-center justify-end tracking-tighter tabular-nums">
-                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                <Clock className="w-4 h-4 ml-3 text-blue-500 opacity-60" />
+              {/* Refined Digital Clock: Fixed small font and tabular-nums to prevent layout jumping */}
+              <div className="text-[11px] font-black flex items-center justify-end tracking-tighter tabular-nums leading-none">
+                <span className="min-w-[70px] inline-block">
+                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                </span>
+                <Clock className="w-3.5 h-3.5 ml-2.5 text-blue-500 opacity-60 flex-shrink-0" />
               </div>
-              <div className={`text-[10px] font-black uppercase tracking-widest flex items-center justify-end ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                {currentTime.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                <Calendar className="w-3 h-3 ml-2" />
+              <div className={`text-[9px] font-black uppercase tracking-widest flex items-center justify-end mt-1 leading-none ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                {currentTime.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}
+                <Calendar className="w-2.5 h-2.5 ml-2" />
               </div>
             </div>
             
