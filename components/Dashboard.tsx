@@ -18,7 +18,12 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [] }) => {
   // Defensive check to ensure orders is an array and filter out any potential nulls
   const safeOrders = Array.isArray(orders) ? orders.filter(o => !!o) : [];
   
-  const paidOrders = safeOrders.filter(o => o.status === 'paid');
+  // Filter for today's orders only (from midnight)
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayTs = startOfToday.getTime();
+
+  const paidOrders = safeOrders.filter(o => o.status === 'paid' && o.createdAt >= startOfTodayTs);
   
   // Ensure totals are always numbers and never null/undefined
   const totalSales = paidOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
